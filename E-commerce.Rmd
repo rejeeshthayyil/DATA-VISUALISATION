@@ -1,0 +1,248 @@
+---
+title: "E-Commerce"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(knitr)
+library(DT)
+library(rpivotTable)
+library(ggplot2)
+library(plotly)
+library(dplyr)
+library(openintro)
+library(highcharter)
+library(readxl)
+library(yaml)
+library(scales)
+library(ggvis)
+
+```
+
+# MainDashBoard
+
+Column {data-width=600, .tabset}
+--------------------------------------------------
+
+### Ship Mode
+
+```{r}
+Modeof_Shipment<- read_excel("C:/Users/rejee/OneDrive/Desktop/Msc_Assignments/Data visualisation Essay Writing; Dashboard Implementation/Sample - Superstore.xls", 
+                              sheet = "Mode of shipment")
+View(Modeof_Shipment)
+
+ShipMode<-Modeof_Shipment$`Ship mode`
+Total<-Modeof_Shipment$Total
+b<-ggplot(Modeof_Shipment)+
+  geom_bar(aes(x=ShipMode, y=Total),fill= 'blue', stat = 'identity')+
+  ggtitle("Shipment Mode")+
+  theme(axis.text.x = element_text(angle = 90,vjust = 0.5,hjust = 1))
+Chart1<-ggplotly(b)
+Chart1
+
+
+```
+
+### Product Wise Sales
+
+
+```{r}
+
+Productwise<- read_excel("C:/Users/rejee/OneDrive/Desktop/Msc_Assignments/Data visualisation Essay Writing; Dashboard Implementation/Sample - Superstore.xls", 
+                          sheet = "Product wise sales")
+
+prodcutlist <- data.frame(Products=c(Productwise$`sub-category`), 
+                           Total = c(Productwise$Total))
+b1<-ggplot(prodcutlist, aes(x=Products,y = Total)) +geom_bar(fill="blue",stat = "identity")+
+  expand_limits(x = c(0, NA), y = c(0, NA))+
+  scale_y_continuous(labels = unit_format(unit = "M", scale = 1e-6))+
+                       theme(axis.text.x = element_text(angle = 90,vjust = 0.5,hjust = 1))
+  
+Chart2<-ggplotly(b1)
+Chart2
+
+```
+
+### Average Sales
+
+```{r}
+
+Sample_Superstore <- read_excel("C:/Users/rejee/OneDrive/Desktop/Msc_Assignments/Data visualisation Essay Writing; Dashboard Implementation/Sample - Superstore.xls")
+
+gauge(round(mean(Sample_Superstore$Sales),
+            digits = 2),
+      min = 0,
+      max = 300,
+      gaugeSectors(danger = c(0,100),
+                   warning = c(100,150),
+                   success =   c(150,250),
+                 colors =c("blue","yellow","red")))
+
+```
+
+Column {data-width=500, .tabset}
+-----------------------------------------------
+
+### Region Wise Sales
+
+```{r}
+
+
+Region <- read_excel("C:/Users/rejee/OneDrive/Desktop/Msc_Assignments/Data visualisation Essay Writing; Dashboard Implementation/Sample - Superstore.xls", 
+                     sheet = "Region")
+
+
+                     
+data <- Region[,c('Region', 'Total')]
+pie <- plot_ly(data, labels = ~Region, values = ~Total,fill=Region, type = 'pie')
+pie <- pie %>% layout(title = 'Regional Wise Sales',
+                      xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                      yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+pie
+
+
+```
+
+### Year Wise Sales
+
+```{r}
+
+Sample_Superstore <- read_excel("C:/Users/rejee/OneDrive/Desktop/Msc_Assignments/Data visualisation Essay Writing; Dashboard Implementation/Sample - Superstore.xls", 
+                                sheet = "Year wise sales")
+
+Year<-Sample_Superstore$`Order year`
+Sales<-Sample_Superstore$`Total Sales`
+
+b<-ggplot(data,aes(x = Year, y = Sales))+
+  ggtitle("YEARWISE Sales")+
+  geom_line()+geom_point()+
+  
+  scale_x_continuous(
+    breaks = seq(from = 2014, to = 2017, by = 1),
+    limits = c(2014, 2017)
+  )
+b1<-ggplotly(b)
+b1
+  
+
+```
+
+
+
+
+
+
+
+
+# Map
+
+Column {data-width=500, .tabset}
+--------------------------------------------------
+
+```{r}
+library(readxl)
+Sample_Superstore <- read_excel("C:/Users/rejee/OneDrive/Desktop/Msc_Assignments/Data visualisation Essay Writing; Dashboard Implementation/Sample - Superstore.xls", 
+    sheet = "Super store")
+Data<-Sample_Superstore%>%
+group_by(State)%>%
+  summarise(Sales)
+  highchart()%>%
+    hc_title(text="State Wise Sales")%>%
+    hc_subtitle("Source:E-Commerce")%>%
+    hc_add_series_map(usgeojson,Data,
+                      names="State",
+                      value = "Sales",
+                      joinBy = c("woename","State"))%>%
+    hc_mapNavigation(enabled=T)
+```
+
+Data Table
+========================================
+
+Column {data-width=500, .tabset}
+--------------------------------------------------
+
+```{r}
+library(readxl)
+Data <- read_excel("C:/Users/rejee/OneDrive/Desktop/Msc_Assignments/Data visualisation Essay Writing; Dashboard Implementation/Sample - Superstore.xls", 
+    sheet = "Super store")
+datatable(Data,
+          caption = "E-Commerce Data",
+          rownames = T,
+          filter = "top",
+          options = list(pageLength=25))
+
+
+```
+
+
+# Sales Report
+
+Column {data-width=500, .tabset}
+--------------------------------------------------
+
+```{r}
+
+Data <- read_excel("C:/Users/rejee/OneDrive/Desktop/Msc_Assignments/Data visualisation Essay Writing; Dashboard Implementation/Sample - Superstore.xls", 
+    sheet = "Super store")
+rpivotTable(Data,
+            aggregatorName = "Maximum",
+            cols = "Region",
+            rows = "State",
+            rendererName = "Bar Chart"
+            )
+```
+
+Summary Reports {data-orientaion=columns}
+============================================
+
+Column {data width=100}
+--------------------------
+### Total number of orders
+
+```{r}
+valueBox(length(Data$Sales),
+         icon = "fa-user")
+
+```
+
+### Total Sales
+
+```{r}
+valueBox(sum(Data$Sales),
+         icon ="fa-user")
+```
+
+### Average Sales by order
+
+```{r}
+valueBox(mean(Data$Sales),
+         icon = "fa-user")
+```
+
+### Total Discount
+
+```{r}
+valueBox(sum(Data$Discount),
+         icon = "fa-user")
+```
+
+Column
+--------------
+
+Report
+
+* Total number of orders =`r length(Data$Sales)`
+* Total Sales =`r sum(Data$Sales)`
+* Average Sales by Order = `r mean(Data$Sales)`
+* Total Discount = `r sum(Data$Discount)`
+
+
+
+
+
